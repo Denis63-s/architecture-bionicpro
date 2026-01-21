@@ -4,16 +4,28 @@ import Keycloak, { KeycloakConfig } from 'keycloak-js';
 import ReportPage from './components/ReportPage';
 
 const keycloakConfig: KeycloakConfig = {
-  url: process.env.REACT_APP_KEYCLOAK_URL,
-  realm: process.env.REACT_APP_KEYCLOAK_REALM||"",
-  clientId: process.env.REACT_APP_KEYCLOAK_CLIENT_ID||""
+  url: process.env.REACT_APP_KEYCLOAK_URL || 'http://localhost:8080/auth',
+  realm: process.env.REACT_APP_KEYCLOAK_REALM || "reports-realm",
+  clientId: process.env.REACT_APP_KEYCLOAK_CLIENT_ID || "reports-frontend"
+};
+
+const initOptions = {
+  pkceMethod: 'S256',  // Включаем PKCE
+  checkLoginIframe: false,
+  onLoad: 'check-sso',
+  flow: 'standard',     // Используем стандартный flow
+  enableLogging: true
 };
 
 const keycloak = new Keycloak(keycloakConfig);
 
 const App: React.FC = () => {
   return (
-    <ReactKeycloakProvider authClient={keycloak}>
+    <ReactKeycloakProvider 
+      authClient={keycloak}
+      initOptions={initOptions}
+      LoadingComponent={<div>Loading Keycloak...</div>}
+    >
       <div className="App">
         <ReportPage />
       </div>

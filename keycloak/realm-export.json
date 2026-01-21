@@ -1,129 +1,271 @@
 {
-    "realm": "reports-realm",
-    "enabled": true,
-    "roles": {
-      "realm": [
-        {
-          "name": "user",
-          "description": "Regular user role"
-        },
-        {
-          "name": "administrator",
-          "description": "Administrator role"
-        },
-        {
-          "name": "prothetic_user",
-          "description": "Prothetic user role with report access"
-        }
-      ]
-    },
-    "users": [
+  "realm": "reports-realm",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "registrationEmailAsUsername": false,
+  "rememberMe": false,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 30,
+  
+  "roles": {
+    "realm": [
       {
-        "username": "user1",
-        "enabled": true,
-        "email": "user1@example.com",
-        "firstName": "User",
-        "lastName": "One",
-        "credentials": [
-          {
-            "type": "password",
-            "value": "password123",
-            "temporary": false
-          }
-        ],
-        "realmRoles": ["user"]
+        "name": "user",
+        "description": "Regular user role"
       },
       {
-        "username": "user2",
-        "enabled": true,
-        "email": "user2@example.com",
-        "firstName": "User",
-        "lastName": "Two",
-        "credentials": [
-          {
-            "type": "password",
-            "value": "password123",
-            "temporary": false
-          }
-        ],
-        "realmRoles": ["user"]
+        "name": "administrator",
+        "description": "Administrator role"
       },
       {
-        "username": "admin1",
-        "enabled": true,
-        "email": "admin1@example.com",
-        "firstName": "Admin",
-        "lastName": "One",
-        "credentials": [
-          {
-            "type": "password",
-            "value": "admin123",
-            "temporary": false
-          }
-        ],
-        "realmRoles": ["administrator"]
-      },
-      {
-        "username": "prothetic1",
-        "enabled": true,
-        "email": "prothetic1@example.com",
-        "firstName": "Prothetic",
-        "lastName": "One",
-        "credentials": [
-          {
-            "type": "password",
-            "value": "prothetic123",
-            "temporary": false
-          }
-        ],
-        "realmRoles": ["prothetic_user"]
-      },
-      {
-        "username": "prothetic2",
-        "enabled": true,
-        "email": "prothetic2@example.com",
-        "firstName": "Prothetic",
-        "lastName": "Two",
-        "credentials": [
-          {
-            "type": "password",
-            "value": "prothetic123",
-            "temporary": false
-          }
-        ],
-        "realmRoles": ["prothetic_user"]
-      },
-      {
-        "username": "prothetic3",
-        "enabled": true,
-        "email": "prothetic3@example.com",
-        "firstName": "Prothetic",
-        "lastName": "Three",
-        "credentials": [
-          {
-            "type": "password",
-            "value": "prothetic123",
-            "temporary": false
-          }
-        ],
-        "realmRoles": ["prothetic_user"]
-      }
-    ],
-    "clients": [
-      {
-        "clientId": "reports-frontend",
-        "enabled": true,
-        "publicClient": true,
-        "redirectUris": ["http://localhost:3000/*"],
-        "webOrigins": ["http://localhost:3000"],
-        "directAccessGrantsEnabled": true
-      },
-      {
-        "clientId": "reports-api",
-        "enabled": true,
-        "clientAuthenticatorType": "client-secret",
-        "secret": "oNwoLQdvJAvRcL89SydqCWCe5ry1jMgq", 
-        "bearerOnly": true
+        "name": "prothetic_user",
+        "description": "Prothetic user role with report access"
       }
     ]
-  }
+  },
+  
+  "users": [
+    {
+      "username": "user1",
+      "enabled": true,
+      "email": "user1@example.com",
+      "firstName": "User",
+      "lastName": "One",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["user"]
+    },
+    {
+      "username": "user2",
+      "enabled": true,
+      "email": "user2@example.com",
+      "firstName": "User",
+      "lastName": "Two",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["user"]
+    },
+    {
+      "username": "admin1",
+      "enabled": true,
+      "email": "admin1@example.com",
+      "firstName": "Admin",
+      "lastName": "One",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["administrator"]
+    },
+    {
+      "username": "prothetic1",
+      "enabled": true,
+      "email": "prothetic1@example.com",
+      "firstName": "Prothetic",
+      "lastName": "One",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "prothetic123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["prothetic_user"]
+    },
+    {
+      "username": "prothetic2",
+      "enabled": true,
+      "email": "prothetic2@example.com",
+      "firstName": "Prothetic",
+      "lastName": "Two",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "prothetic123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["prothetic_user"]
+    },
+    {
+      "username": "prothetic3",
+      "enabled": true,
+      "email": "prothetic3@example.com",
+      "firstName": "Prothetic",
+      "lastName": "Three",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "prothetic123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["prothetic_user"]
+    }
+  ],
+  
+  "clients": [
+    {
+      "clientId": "reports-frontend",
+      "name": "Reports Frontend Application",
+      "enabled": true,
+      "publicClient": true,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,  // Отключаем Resource Owner Password Credentials
+      "serviceAccountsEnabled": false,
+      
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:3000"
+      ],
+      
+      "webOrigins": [
+        "http://localhost:3000",
+        "*"
+      ],
+      
+      "attributes": {
+        "pkce.code.challenge.method": "S256",  // Включаем PKCE с SHA256
+        "oauth2.device.authorization.grant.enabled": "false",
+        "client.secret.creation.time": "0",
+        "backchannel.logout.session.required": "true",
+        "backchannel.logout.revoke.offline.tokens": "false",
+        "use.refresh.tokens": "true",
+        "refresh.token.max.reuse": "0",
+        "exclude.session.state.from.auth.response": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "post.logout.redirect.uris": "http://localhost:3000",
+        "tls.client.certificate.bound.access.tokens": "false",
+        "require.pushed.authorization.requests": "false",
+        "acr.loa.map": "{}",
+        "access.token.lifespan": "300",
+        "client.offline.session.max.lifespan": "0"
+      },
+      
+      "protocolMappers": [
+        {
+          "name": "audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "reports-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ],
+      
+      "defaultClientScopes": [
+        "web-origins",
+        "role_list",
+        "profile",
+        "roles",
+        "email"
+      ],
+      
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "clientId": "reports-api",
+      "name": "Reports API",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      
+      "secret": "oNwoLQdvJAvRcL89SydqCWCe5ry1jMgq",
+      "clientAuthenticatorType": "client-secret",
+      
+      "attributes": {
+        "client.secret.creation.time": "0",
+        "backchannel.logout.session.required": "true",
+        "backchannel.logout.revoke.offline.tokens": "false",
+        "use.refresh.tokens": "true"
+      },
+      
+      "defaultClientScopes": [
+        "web-origins",
+        "role_list",
+        "profile",
+        "roles",
+        "email"
+      ],
+      
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    }
+  ],
+  
+  "clientScopes": [
+    {
+      "name": "role_list",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true",
+        "consent.screen.text": "${roleScopeConsentText}"
+      },
+      "protocolMappers": [
+        {
+          "name": "role list",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "multivalued": "true",
+            "user.attribute": "foo",
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  
+  "defaultRoles": [
+    {
+      "name": "default-roles-reports-realm",
+      "description": "${role_default-roles}"
+    }
+  ]
+}
