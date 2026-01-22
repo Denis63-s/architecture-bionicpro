@@ -1,19 +1,22 @@
 version: '3.8'
 
 services:
+  # 1. Keycloak и его БД
   keycloak_db:
-    image: postgres:14
+    image: postgres:14-alpine
+    container_name: keycloak-db
     environment:
       POSTGRES_DB: keycloak_db
       POSTGRES_USER: keycloak_user
       POSTGRES_PASSWORD: keycloak_password
     volumes:
-      - ./postgres-keycloak-data:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"
-  
+      - keycloak_db_data:/var/lib/postgresql/data
+    networks:
+      - bionicpro-network
+
   keycloak:
     image: quay.io/keycloak/keycloak:21.1
+    container_name: keycloak-auth
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
@@ -21,24 +24,205 @@ services:
       KC_DB_URL: jdbc:postgresql://keycloak_db:5432/keycloak_db
       KC_DB_USERNAME: keycloak_user
       KC_DB_PASSWORD: keycloak_password
+      KC_HOSTNAME: localhost
+      KC_HTTP_ENABLED: "true"
     command: 
       - start-dev
       - --import-realm
+      - --http-relative-path=/auth
     volumes:
-      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
     ports:
       - "8080:8080"
     depends_on:
       - keycloak_db
-  
+    networks:
+      - bionicpro-network
+
+  # 2. OLAP база для витрины данных
+  olap-db:
+    image: postgres:14-alpine
+    container_name: olap-database
+    environment:
+      POSTGRES_DB: olap_db
+      POSTGRES_USER: olap_user
+      POSTGRES_PASSWORD: olap_password
+    volumes:
+      - ./olap-db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - olap_db_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    networks:
+      - bionicpro-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U olap_user -d olap_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # 3. Backend API (FastAPI)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: reports-api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://olap_user:olap_password@olap-db:5432/olap_db
+      KEYCLOAK_URL: http://keycloak:8080/auth/realms/reports-realm
+    depends_on:
+      olap-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    volumes:
+      - ./backend:/app:ro
+    networks:
+      - bionicpro-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 4. Frontend (React)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    container_name: reports-frontend
     ports:
       - "3000:3000"
     environment:
-      REACT_APP_API_URL: http://localhost:8000
-      REACT_APP_KEYCLOAK_URL: http://localhost:8080/auth  # ← ТОЛЬКО ЭТО ИСПРАВИТЬ!
+      REACT_APP_API_URL: http://backend:8000
+      REACT_APP_KEYCLOAK_URL: http://keycloak:8080/auth
       REACT_APP_KEYCLOAK_REALM: reports-realm
       REACT_APP_KEYCLOAK_CLIENT_ID: reports-frontend
+      CHOKIDAR_USEPOLLING: "true"
+    depends_on:
+      - backend
+      - keycloak
+    volumes:
+      - ./frontend:/app:ro
+      - /app/node_modules
+    networks:
+      - bionicpro-network
+
+  # 5. Airflow и его БД
+  airflow-db:
+    image: postgres:14-alpine
+    container_name: airflow-database
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+    volumes:
+      - airflow_db_data:/var/lib/postgresql/data
+    networks:
+      - bionicpro-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  airflow-redis:
+    image: redis:7-alpine
+    container_name: airflow-redis
+    networks:
+      - bionicpro-network
+
+  airflow-webserver:
+    build:
+      context: ./airflow
+      dockerfile: Dockerfile
+    container_name: airflow-webserver
+    restart: always
+    depends_on:
+      - airflow-db
+      - airflow-redis
+      - olap-db
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@airflow-db:5432/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://airflow-redis:6379/0
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__WEBSERVER__SECRET_KEY: 'temporary_secret_key'
+      _AIRFLOW_DB_UPGRADE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: admin
+      _AIRFLOW_WWW_USER_PASSWORD: admin
+      AIRFLOW_CONN_OLAP_POSTGRES: 'postgres://olap_user:olap_password@olap-db:5432/olap_db'
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    ports:
+      - "8081:8080"
+    command: webserver
+    networks:
+      - bionicpro-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  airflow-scheduler:
+    build:
+      context: ./airflow
+      dockerfile: Dockerfile
+    container_name: airflow-scheduler
+    restart: always
+    depends_on:
+      - airflow-db
+      - airflow-redis
+      - airflow-webserver
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@airflow-db:5432/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://airflow-redis:6379/0
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW_CONN_OLAP_POSTGRES: 'postgres://olap_user:olap_password@olap-db:5432/olap_db'
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    command: scheduler
+    networks:
+      - bionicpro-network
+
+  airflow-worker:
+    build:
+      context: ./airflow
+      dockerfile: Dockerfile
+    container_name: airflow-worker
+    restart: always
+    depends_on:
+      - airflow-scheduler
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@airflow-db:5432/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://airflow-redis:6379/0
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW_CONN_OLAP_POSTGRES: 'postgres://olap_user:olap_password@olap-db:5432/olap_db'
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    command: celery worker
+    networks:
+      - bionicpro-network
+
+volumes:
+  keycloak_db_data:
+  olap_db_data:
+  airflow_db_data:
+
+networks:
+  bionicpro-network:
+    driver: bridge
